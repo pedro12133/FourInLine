@@ -14,6 +14,39 @@ public class Board {
     private Player winner;
     private String [] winStrs;
 
+
+    private double maxValue(State state, double a, double b) {
+        if(terminal(state))
+            return utility(state);
+        double v = Double.NEGATIVE_INFINITY;
+        //for each action act and successor state s
+        State s = new State();
+        for(int i = 0; i < 1000; i ++) {
+            v = Math.max(v,minValue(s,a,b));
+            if(v >= b)
+                return v;
+            a = Math.max(a,v);
+        }
+        return v;
+    }
+
+    private double minValue(State state, double a, double b) {
+        return 0;
+    }
+
+    private double utility(State state) {
+        return 0;
+    }
+
+    private boolean terminal(State state) {
+        return false;
+    }
+    private String alphaBetaSearch(State state) {
+        double v = maxValue(state,Double.NEGATIVE_INFINITY,Double.POSITIVE_INFINITY);
+        // return the action in SUCCESSORS(state) w/ value v
+        return "";
+    }
+
     public Board(int size) {
         //make by size
         this.board = new ArrayList<String>();
