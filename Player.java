@@ -1,15 +1,24 @@
 public class Player {
     private String id;
-    private char moveChar;
+    private char character;
     private int turn;
 
-    public Player(String id, char moveChar) {
-        this.id = id;
-        this.moveChar = moveChar;
+    public Player() {
+        this.id = null;
+        this.character = '\u0000';
+        this.turn = -1;
     }
-    public void setPlayerTurn(int turn) { this.turn = turn; }
+    public Player(String id, char pChar) {
+        this.id = id;
+        this.character = pChar;
+    }
+
+    public void setId(String id) { this.id = id; }
+    public void setCharacter(char character) { this.character = character;}
+    public void setTurn(int turn) { this.turn = turn; }
+
     public String getId() { return this.id; }
-    public char getMoveChar() { return this.moveChar; }
+    public char getCharacter() { return this.character; }
     public int getTurn() { return this.turn; }
 
 }
