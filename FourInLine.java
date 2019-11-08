@@ -39,7 +39,88 @@ public class FourInLine {
         return false;
     }
 
-    public void runStandardGame() {
+    private double maxValue(State state, double a, double b) {
+        if(terminalTest(state))
+            return utility(state);
+        double v = Double.NEGATIVE_INFINITY;
+        //for each action act and successor state s
+        State s = new State(64);
+        for(int i = 0; i < 1000; i ++) {
+            v = Math.max(v,minValue(s,a,b));
+            if(v >= b)
+                return v;
+            a = Math.max(a,v);
+        }
+        return v;
+    }
+
+    private double minValue(State state, double a, double b) {
+        if(terminalTest(state))
+            return utility(state);
+        double v = Double.POSITIVE_INFINITY;
+        //for each action act and successor state s
+        State s = new State(64);
+        for(int i = 0; i < 1000; i ++) {
+            v = Math.min(v,minValue(s,a,b));
+            if(v <= a)
+                return v;
+            a = Math.min(a,v);
+        }
+        return v;
+    }
+
+    private double utility(State state) {
+        return 0;
+    }
+
+    private boolean terminalTest(State state) {
+        return false;
+    }
+
+    private String alphaBetaSearch(State state) {
+        double v = maxValue(state,Double.NEGATIVE_INFINITY,Double.POSITIVE_INFINITY);
+        // return the action in SUCCESSORS(state) w/ value v
+        return "";
+    }
+
+    public int agentTurn() {
+        for(int i = 0; i < this.numOfPlayers; i ++)
+            if(this.players[i].getId().equals("Agent"))
+                return i;
+        return -1;
+
+    }
+
+    public void playAgent() {
+        int x = agentTurn();
+        System.out.println(x);
+        this.board.print();
+        while(this.winner == -1) {
+            for(int i = 0; i < this.numOfPlayers; i++) {
+                Player currentPlayer = this.players[i];
+                String move;
+                if(i != x)
+                    move = askForNextMove(currentPlayer);
+                else
+                    move = alphaBetaSearch(this.board.getState());
+                this.moveCount++;
+                this.board.setMove(move,currentPlayer.getCharacter(),this.moveCount);
+                this.board.print();
+                if(playerWon(currentPlayer)) {
+                    this.winner = i;
+                    break;
+                }
+            }
+            if(this.moveCount == 63) break;
+        }
+
+        if(this.winner != -1)
+            System.out.println(this.players[this.winner].getId()+" won!");
+        else
+            System.out.println("Tie game");
+    }
+
+    public void playOtherPlayer() {
         this.board.print();
         while(this.winner == -1) {
             for(int i = 0; i < this.numOfPlayers; i++) {
@@ -158,6 +239,6 @@ public class FourInLine {
 
     public static void main(String [] args) {
         FourInLine FourInLine = new FourInLine();
-        FourInLine.runStandardGame();
+        FourInLine.playOtherPlayer();
     }
 }
