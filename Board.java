@@ -44,7 +44,6 @@ public class Board {
         this.state.getArray()[i] = playerCharacter;
         updateBoard(row, column, playerCharacter, moveCount, move);
     }
-
     private void updateBoard(int row, int column, char playerCharacter, int moveCount, String move) {
 
         // update state
