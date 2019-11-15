@@ -7,8 +7,11 @@ public class State {
         for(int i = 0; i < state.size(); i++)
             this.state[i] = state.getArray()[i];
     }
-    public void setValue(char value, int i) {
+    public void setValueAt(char value, int i) {
         this.state[i] = value;
+    }
+    public char getValueAt(int i) {
+        return this.state[i];
     }
     public char [] getArray() {
         return this.state;

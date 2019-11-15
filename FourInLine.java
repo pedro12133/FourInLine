@@ -1,3 +1,4 @@
+import java.util.Random;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -16,7 +17,7 @@ public class FourInLine {
     private int searchDepth;
     private int nodeCount;
     private int prunes;
-    private int nextMoveIndex;
+    private int agentMove;
 
     public FourInLine() {
         this.numOfPlayers = 2;
@@ -24,7 +25,7 @@ public class FourInLine {
         this.players = new Player[2];
         this.moveCount = 0;
         this.winner = -1;
-        setMaxTime();
+        //setMaxTime();
         setPlayers();
         this.board = new Board(8, this.players);
         this.nodeCount = 0;
@@ -47,12 +48,6 @@ public class FourInLine {
         return false;
     }
 
-    //        for(Node n : successors) {
-//            for (char x : n.getState().getArray())
-//                System.out.print(x + " ");
-//            System.out.println("value = "+n.getValue()+" i = "+n.getMoveIndex());
-//        }
-
     private int maxValue(Node node, int a, int b) {
         if(playerWon(this.players[agentTurn]))
             return 1000000;
@@ -61,11 +56,17 @@ public class FourInLine {
             return utility(node);
 
         int v = -10000000; // -infinity
-        Node [] successors = node.getSuccessors();
 
-        for(int i = 0; i < successors.length; i ++) {
+        Node currentNode = node.nextSuccessor();
+        while(currentNode != null) {
+
             nodeCount++;
-            int minValue = minValue(successors[i],a,b);
+            int minValue = minValue(currentNode,a,b);
+            if(node.getDepth() == 0) {
+                System.out.print((char) (currentNode.getMoveIndex() / 8 + 'a') + "" + ((currentNode.getMoveIndex() % 8) + 1) + "-" + minValue + " ");
+                if(((currentNode.getMoveIndex() % 8) + 1) == 8)
+                    System.out.println();
+            }
             if(minValue > v)
                 v = minValue;
             if(v >= b){
@@ -73,10 +74,12 @@ public class FourInLine {
                 return v;
             }
             if(v > a) {
-                if(node.getDepth() == 0)
-                    nextMoveIndex = successors[i].getMoveIndex();
+                if(node.getDepth() == 0) {
+                    agentMove = currentNode.getMoveIndex();
+                }
                 a = v;
             }
+            currentNode = node.nextSuccessor();
         }
 
         return v;
@@ -90,147 +93,98 @@ public class FourInLine {
             return utility(node);
 
         int v = 10000000;
-        Node [] successors = node.getSuccessors();
 
-        for(int i = 0; i < successors.length; i ++) {
+        Node currentNode = node.nextSuccessor();
+        while(currentNode != null) {
+
             nodeCount++;
-            v = Math.min(v,maxValue(successors[i],a,b));
+            v = Math.min(v,maxValue(currentNode,a,b));
             if(v <= a) {
                 prunes++;
                 return v;
             }
             b = Math.min(b,v);
+            currentNode = node.nextSuccessor();
         }
-
         return v;
     }
 
     private int utility(Node node) {
-        int value = node.getValue();
-        value += inLineValue(node, 'X');
-        value += opponentBlockValue(node, 'O');
+        int value = 0;
+        value += cellValue(node);
+        value += killerMoveValue(node);
         return value;
     }
 
-    private int inLineValue(Node node, char playerCharacter) {
+    private int killerMoveValue(Node node) {
         State state = node.getState();
-        int counter = 0;
-        int twoInLineCounter = 0;
-        int threeInLineCounter = 0;
-        int value = 0;
+        String setUp0 = "-XX--";
+        String setUp1 = "--XX-";
+        String killer0 = "-XXX-";
+        String kill = "XXXX";
+        String row;
+        String column;
 
-        // check for horizontal win
-        for(int i = 0; i < state.getArray().length; i++) {
-            if(state.getArray()[i] == playerCharacter)
-                counter++;
-            else
-                counter = 0;
-            if(counter == 2)
-                twoInLineCounter++;
-            if(counter == 3)
-                threeInLineCounter++;
-            if(i%this.board.getSize() == this.board.getSize()-1)
-                counter = 0;
+        for(int i = 0; i < 8; i++) {
+            row = ""+state.getValueAt((8*i))+state.getValueAt((8*i)+1)+state.getValueAt((8*i)+2)+state.getValueAt((8*i)+3);
+            row += ""+state.getValueAt((8*i)+4)+state.getValueAt((8*i)+5)+state.getValueAt((8*i)+6)+state.getValueAt((8*i)+7);
+            column = ""+state.getValueAt(i)+state.getValueAt(8+i)+state.getValueAt(16+i)+state.getValueAt(24+i);
+            column += ""+state.getValueAt(32+i)+state.getValueAt(40+i)+state.getValueAt(48+i)+state.getValueAt(56+i);
+
+            if(row.contains(kill) || column.contains(kill))
+                return this.searchDepth*1000;
+            if(row.contains(killer0) || column.contains(killer0))
+                return this.searchDepth*100;
+            if(row.contains(setUp0) || column.contains(setUp0))
+                return this.searchDepth*10;
+            if(row.contains(setUp1) || column.contains(setUp1))
+                return this.searchDepth*10;
+
         }
-
-        // check for vertical win
-        for(int i = 0; i < this.board.getSize(); i++) {
-            for(int j = 0; j < this.board.getSize(); j++) {
-                if(state.getArray()[i + j*8] == playerCharacter)
-                    counter++;
-                else
-                    counter = 0;
-                if(counter == 2)
-                    twoInLineCounter++;
-                if(counter == 3)
-                    threeInLineCounter++;
-            }
-            counter = 0;
-        }
-
-        value += this.searchDepth*(10*twoInLineCounter + 25*threeInLineCounter);
-        return value;
-
+        return 0;
     }
 
-    private int opponentBlockValue(Node node,char playerCharacter) {
-        State state = node.getState();
-        int counter = 0;
-        int twoInLineCounter = 0;
-        int threeInLineCounter = 0;
-        int twoInLineBlocks = 0;
-        int threeInLineBlocks = 0;
+    // Heuristics
+    private int cellValue(Node node) {
+        int [] cellValues = {
+                1,2,3,4,4,3,2,1,
+                2,3,4,5,5,4,3,2,
+                3,4,5,6,6,5,4,3,
+                4,5,6,7,7,6,5,4,
+                4,5,6,7,7,6,5,4,
+                3,4,5,6,6,5,4,3,
+                2,3,4,5,5,4,3,2,
+                1,2,3,4,4,3,2,1
+        };
         int value = 0;
 
-
-        // check for blocking: -  -  -  O  O  -  -  -
-
-        // check for horizontal win
-        for(int i = 0; i < state.getArray().length; i++) {
-            if(state.getArray()[i] == playerCharacter)
-                counter++;
-            else if(state.getArray()[i] == 'X' && twoInLineCounter > 0) {
-                twoInLineCounter = 0;
-                counter = 0;
-                twoInLineBlocks++;
-            }
-            else if(state.getArray()[i] == 'X' && threeInLineCounter > 0) {
-                threeInLineCounter = 0;
-                counter = 0;
-                threeInLineBlocks++;
-            }
-            else
-                counter = 0;
-            if(counter == 2)
-                twoInLineCounter++;
-            if(counter == 3)
-                threeInLineCounter++;
-            if(i%this.board.getSize() == this.board.getSize()-1)
-                counter = 0;
-        }
-
-        twoInLineCounter = 0;
-        threeInLineCounter = 0;
-
-        // check for vertical win
-        for(int i = 0; i < this.board.getSize(); i++) {
-            for(int j = 0; j < this.board.getSize(); j++) {
-                if(state.getArray()[i + j*8] == playerCharacter)
-                    counter++;
-                else if(state.getArray()[i] == 'X' && twoInLineCounter > 0) {
-                    twoInLineCounter = 0;
-                    counter = 0;
-                    twoInLineBlocks++;
-                }
-                else if(state.getArray()[i] == 'X' && threeInLineCounter > 0) {
-                    threeInLineCounter = 0;
-                    counter = 0;
-                    threeInLineBlocks++;
-                }
-                else
-                    counter = 0;
-                if(counter == 2)
-                    twoInLineCounter++;
-                if(counter == 3)
-                    threeInLineCounter++;
-            }
-            counter = 0;
-        }
-         value = this.searchDepth*(1000*twoInLineBlocks + 10000*threeInLineBlocks);
+        for(int i = 0; i < node.getState().size(); i++)
+            if(node.getState().getValueAt(i) == 'X')
+                value += cellValues[i];
         return value;
     }
 
     private String alphaBetaSearch(State state, int depth) {
-        this.searchDepth = depth;
-        Node currentState = new Node(state,true,0);
-        int v = maxValue(currentState,-1000000,1000000);
-        String row = (char)(nextMoveIndex/8 + 'a') + "";
-        String column = Integer.toString((nextMoveIndex%8)+1);
+        if(this.moveCount < 2) {
+            int [] bestFirstMove = {27,28,35,36};
+            agentMove = bestFirstMove[new Random().nextInt(4)];
+            while(!validCell((char)(agentMove /8 + 'a') + ""+((agentMove %8)+1)))
+                agentMove = bestFirstMove[new Random().nextInt(4)];
+            System.out.println(agentMove);
+        }
+        else {
+            this.searchDepth = depth;
+            Node currentState = new Node(state,true,0);
+            int v = maxValue(currentState,-1000000,1000000);
+            System.out.println("\nBest: "+v+" nodes: "+nodeCount+" prunes: "+prunes);
+        }
+
+        String row = (char)(agentMove /8 + 'a') + "";
+        String column = Integer.toString((agentMove %8)+1);
+
         nodeCount = 0;
         prunes = 0;
-        nextMoveIndex = 0;
-
-        System.out.println(v);
+        agentMove = 0;
 
         return row+column;
     }
@@ -248,6 +202,7 @@ public class FourInLine {
 
         while(this.winner == -1) {
             for(int i = 0; i < this.numOfPlayers; i++) {
+                System.out.println("move count: " +moveCount);
                 Player currentPlayer = this.players[i];
                 String move;
                 if(i != agentTurn)
@@ -299,8 +254,8 @@ public class FourInLine {
 
     private boolean playerWon(Player player) {
         char playerCharacter = player.getCharacter();
-        int count = 0;
         State state = this.board.getState();
+        int count = 0;
 
         // check for horizontal win
         for(int i = 0; i < state.getArray().length; i++) {
@@ -394,5 +349,24 @@ public class FourInLine {
     public static void main(String [] args) {
         FourInLine FourInLine = new FourInLine();
         FourInLine.playAgent();
+
+
+
+        /*State state = new State(64);
+        for(int i = 0; i < state.size(); i++)
+            state.setValueAt('-',i);
+
+        state.setValueAt('X',1);
+        state.setValueAt('X',2);
+        state.setValueAt('X',10);
+        state.setValueAt('X',11);
+        state.setValueAt('X',19);
+        state.setValueAt('X',20);
+        state.setValueAt('X',28);
+        state.setValueAt('X',29);
+        state.setValueAt('X',37);
+        state.setValueAt('X',38);*/
+
+
     }
 }
