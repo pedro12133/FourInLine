@@ -116,35 +116,53 @@ public class FourInLine {
         return value;
     }
 
+    // Heuristics
     private int killerMoveValue(Node node) {
+        int value = 0;
         State state = node.getState();
+
         String setUp0 = "-XX--";
         String setUp1 = "--XX-";
         String killer0 = "-XXX-";
         String kill = "XXXX";
+        String inLine0 = "OOO-";
+        String inLine1 = "-OOO";
+
+        String opponentSetUp0 = "-OO--";
+        String opponentSetUp1 = "--OO-";
+        String opponentKiller0 = "-OOO-";
+        String opponentKill = "OOOO";
+
         String row;
         String column;
 
-        for(int i = 0; i < 8; i++) {
+        for(int i = 0; i < this.board.getSize(); i++) {
             row = ""+state.getValueAt((8*i))+state.getValueAt((8*i)+1)+state.getValueAt((8*i)+2)+state.getValueAt((8*i)+3);
             row += ""+state.getValueAt((8*i)+4)+state.getValueAt((8*i)+5)+state.getValueAt((8*i)+6)+state.getValueAt((8*i)+7);
             column = ""+state.getValueAt(i)+state.getValueAt(8+i)+state.getValueAt(16+i)+state.getValueAt(24+i);
             column += ""+state.getValueAt(32+i)+state.getValueAt(40+i)+state.getValueAt(48+i)+state.getValueAt(56+i);
 
-            if(row.contains(kill) || column.contains(kill))
-                return this.searchDepth*1000;
-            if(row.contains(killer0) || column.contains(killer0))
-                return this.searchDepth*100;
-            if(row.contains(setUp0) || column.contains(setUp0))
-                return this.searchDepth*10;
-            if(row.contains(setUp1) || column.contains(setUp1))
-                return this.searchDepth*10;
+            if(row.contains(opponentKill) || column.contains(opponentKill))
+                value += this.searchDepth * -1500;
+            else if(row.contains(opponentKiller0) || column.contains(opponentKiller0) || row.contains(inLine0) || column.contains(inLine1))
+                value += this.searchDepth * -150;
+            else if(row.contains(opponentSetUp0) || column.contains(opponentSetUp0))
+                value += this.searchDepth * -15;
+            else if(row.contains(opponentSetUp1) || column.contains(opponentSetUp1))
+                value += this.searchDepth * -15;
 
+            if(row.contains(kill) || column.contains(kill))
+                value += this.searchDepth * 1000;
+            else if(row.contains(killer0) || column.contains(killer0))
+                value += this.searchDepth * 100;
+            else if(row.contains(setUp0) || column.contains(setUp0))
+                value += this.searchDepth * 10;
+            else if(row.contains(setUp1) || column.contains(setUp1))
+                value += this.searchDepth * 10;
         }
-        return 0;
+        return value;
     }
 
-    // Heuristics
     private int cellValue(Node node) {
         int [] cellValues = {
                 1,2,3,4,4,3,2,1,
@@ -170,13 +188,12 @@ public class FourInLine {
             agentMove = bestFirstMove[new Random().nextInt(4)];
             while(!validCell((char)(agentMove /8 + 'a') + ""+((agentMove %8)+1)))
                 agentMove = bestFirstMove[new Random().nextInt(4)];
-            System.out.println(agentMove);
         }
         else {
             this.searchDepth = depth;
             Node currentState = new Node(state,true,0);
             int v = maxValue(currentState,-1000000,1000000);
-            System.out.println("\nBest: "+v+" nodes: "+nodeCount+" prunes: "+prunes);
+            System.out.println("Best: "+v+" nodes: "+nodeCount+" prunes: "+prunes);
         }
 
         String row = (char)(agentMove /8 + 'a') + "";
@@ -205,15 +222,18 @@ public class FourInLine {
                 System.out.println("move count: " +moveCount);
                 Player currentPlayer = this.players[i];
                 String move;
+
                 if(i != agentTurn)
                     move = askForNextMove(currentPlayer);
                 else {
-                    move = alphaBetaSearch(this.board.getState(), 5);
+                    move = alphaBetaSearch(this.board.getState(), 4);
                     System.out.println("Agent's move: "+move+" ");
                 }
+
                 this.moveCount++;
                 this.board.setMove(move,currentPlayer.getCharacter(),this.moveCount);
                 this.board.print();
+
                 if(playerWon(currentPlayer)) {
                     this.winner = i;
                     break;
