@@ -12,13 +12,10 @@ public class FourInLine {
     private int connectionsToWin;
     private int moveCount;
     private int winner;
-    private int agentTurn;
-
     private int searchDepth;
-    private int nodeCount;
-    private int prunes;
     private int agentMove;
 
+    // Constructor
     public FourInLine() {
         this.numOfPlayers = 2;
         this.connectionsToWin = 4;
@@ -28,193 +25,11 @@ public class FourInLine {
         //setMaxTime();
         setPlayers();
         this.board = new Board(8, this.players);
-        this.nodeCount = 0;
-        this.prunes = 0;
     }
 
-    private boolean validCell(String cell) {
-        Pattern pattern = Pattern.compile("[A-Ha-h][1-8]");
-        Matcher matcher = pattern.matcher(cell);
-        boolean validCell = matcher.matches();
-
-        if(validCell) {
-            cell = cell.toLowerCase();
-            int y = cell.charAt(0) - 'a';
-            int x = Integer.parseInt(cell.substring(1)) - 1;
-            int i = y*8 + x;
-            if(board.getState().getArray()[i] == '-')
-                return true;
-        }
-        return false;
-    }
-
-    private int maxValue(Node node, int a, int b) {
-        if(playerWon(this.players[agentTurn]))
-            return 1000000;
-
-        if(node.getDepth() == this.searchDepth)
-            return utility(node);
-
-        int v = -10000000; // -infinity
-
-        Node currentNode = node.nextSuccessor();
-        while(currentNode != null) {
-
-            nodeCount++;
-            int minValue = minValue(currentNode,a,b);
-            if(node.getDepth() == 0) {
-                System.out.print((char) (currentNode.getMoveIndex() / 8 + 'a') + "" + ((currentNode.getMoveIndex() % 8) + 1) + "-" + minValue + " ");
-                if(((currentNode.getMoveIndex() % 8) + 1) == 8)
-                    System.out.println();
-            }
-            if(minValue > v)
-                v = minValue;
-            if(v >= b){
-                prunes++;
-                return v;
-            }
-            if(v > a) {
-                if(node.getDepth() == 0) {
-                    agentMove = currentNode.getMoveIndex();
-                }
-                a = v;
-            }
-            currentNode = node.nextSuccessor();
-        }
-
-        return v;
-    }
-
-    private int minValue(Node node, int a, int b) {
-        if(playerWon(this.players[agentTurn]))
-            return 1000000;
-
-        if(node.getDepth() == this.searchDepth)
-            return utility(node);
-
-        int v = 10000000;
-
-        Node currentNode = node.nextSuccessor();
-        while(currentNode != null) {
-
-            nodeCount++;
-            v = Math.min(v,maxValue(currentNode,a,b));
-            if(v <= a) {
-                prunes++;
-                return v;
-            }
-            b = Math.min(b,v);
-            currentNode = node.nextSuccessor();
-        }
-        return v;
-    }
-
-    private int utility(Node node) {
-        int value = 0;
-        value += cellValue(node);
-        value += killerMoveValue(node);
-        return value;
-    }
-
-    // Heuristics
-    private int killerMoveValue(Node node) {
-        int value = 0;
-        State state = node.getState();
-
-        String setUp0 = "-XX--";
-        String setUp1 = "--XX-";
-        String killer0 = "-XXX-";
-        String kill = "XXXX";
-        String inLine0 = "OOO-";
-        String inLine1 = "-OOO";
-
-        String opponentSetUp0 = "-OO--";
-        String opponentSetUp1 = "--OO-";
-        String opponentKiller0 = "-OOO-";
-        String opponentKill = "OOOO";
-
-        String row;
-        String column;
-
-        for(int i = 0; i < this.board.getSize(); i++) {
-            row = ""+state.getValueAt((8*i))+state.getValueAt((8*i)+1)+state.getValueAt((8*i)+2)+state.getValueAt((8*i)+3);
-            row += ""+state.getValueAt((8*i)+4)+state.getValueAt((8*i)+5)+state.getValueAt((8*i)+6)+state.getValueAt((8*i)+7);
-            column = ""+state.getValueAt(i)+state.getValueAt(8+i)+state.getValueAt(16+i)+state.getValueAt(24+i);
-            column += ""+state.getValueAt(32+i)+state.getValueAt(40+i)+state.getValueAt(48+i)+state.getValueAt(56+i);
-
-            if(row.contains(opponentKill) || column.contains(opponentKill))
-                value += this.searchDepth * -1500;
-            else if(row.contains(opponentKiller0) || column.contains(opponentKiller0) || row.contains(inLine0) || column.contains(inLine1))
-                value += this.searchDepth * -150;
-            else if(row.contains(opponentSetUp0) || column.contains(opponentSetUp0))
-                value += this.searchDepth * -15;
-            else if(row.contains(opponentSetUp1) || column.contains(opponentSetUp1))
-                value += this.searchDepth * -15;
-
-            if(row.contains(kill) || column.contains(kill))
-                value += this.searchDepth * 1000;
-            else if(row.contains(killer0) || column.contains(killer0))
-                value += this.searchDepth * 100;
-            else if(row.contains(setUp0) || column.contains(setUp0))
-                value += this.searchDepth * 10;
-            else if(row.contains(setUp1) || column.contains(setUp1))
-                value += this.searchDepth * 10;
-        }
-        return value;
-    }
-
-    private int cellValue(Node node) {
-        int [] cellValues = {
-                1,2,3,4,4,3,2,1,
-                2,3,4,5,5,4,3,2,
-                3,4,5,6,6,5,4,3,
-                4,5,6,7,7,6,5,4,
-                4,5,6,7,7,6,5,4,
-                3,4,5,6,6,5,4,3,
-                2,3,4,5,5,4,3,2,
-                1,2,3,4,4,3,2,1
-        };
-        int value = 0;
-
-        for(int i = 0; i < node.getState().size(); i++)
-            if(node.getState().getValueAt(i) == 'X')
-                value += cellValues[i];
-        return value;
-    }
-
-    private String alphaBetaSearch(State state, int depth) {
-        if(this.moveCount < 2) {
-            int [] bestFirstMove = {27,28,35,36};
-            agentMove = bestFirstMove[new Random().nextInt(4)];
-            while(!validCell((char)(agentMove /8 + 'a') + ""+((agentMove %8)+1)))
-                agentMove = bestFirstMove[new Random().nextInt(4)];
-        }
-        else {
-            this.searchDepth = depth;
-            Node currentState = new Node(state,true,0);
-            int v = maxValue(currentState,-1000000,1000000);
-            System.out.println("Best: "+v+" nodes: "+nodeCount+" prunes: "+prunes);
-        }
-
-        String row = (char)(agentMove /8 + 'a') + "";
-        String column = Integer.toString((agentMove %8)+1);
-
-        nodeCount = 0;
-        prunes = 0;
-        agentMove = 0;
-
-        return row+column;
-    }
-
-    public int agentTurn() {
-        for(int i = 0; i < this.numOfPlayers; i ++)
-            if(this.players[i].getId().equals("Agent"))
-                return i;
-        return -1;
-    }
-
+    // Game Modes
     public void playAgent() {
-        agentTurn = agentTurn();
+        int agentTurn = agentTurn();
         this.board.print();
 
         while(this.winner == -1) {
@@ -239,7 +54,6 @@ public class FourInLine {
                     break;
                 }
             }
-
             if(this.moveCount == 63) break;
         }
 
@@ -272,14 +86,48 @@ public class FourInLine {
             System.out.println("Tie game");
     }
 
+    /* Helper functions for playAgent and playOtherPLayer */
+    private int agentTurn() {
+        for(int i = 0; i < this.numOfPlayers; i ++)
+            if(this.players[i].getId().equals("Agent"))
+                return i;
+        return -1;
+    }
+
+    private boolean validCell(String cell) {
+        Pattern pattern = Pattern.compile("[A-Ha-h][1-8]");
+        Matcher matcher = pattern.matcher(cell);
+        boolean validCell = matcher.matches();
+
+        if(validCell) {
+            cell = cell.toLowerCase();
+            int y = cell.charAt(0) - 'a';
+            int x = Integer.parseInt(cell.substring(1)) - 1;
+            int i = y*8 + x;
+            if(board.getState().getValueAt(i) == '-')
+                return true;
+        }
+        return false;
+    }
+
+    private boolean isInt(String s) {
+        boolean isValid = false;
+        try {
+            Integer.parseInt(s);
+            isValid = true;
+        }
+        catch (NumberFormatException e){}
+        return isValid;
+    }
+
     private boolean playerWon(Player player) {
         char playerCharacter = player.getCharacter();
         State state = this.board.getState();
         int count = 0;
 
         // check for horizontal win
-        for(int i = 0; i < state.getArray().length; i++) {
-            if(state.getArray()[i] == playerCharacter)
+        for(int i = 0; i < state.getSize(); i++) {
+            if(state.getValueAt(i) == playerCharacter)
                 count++;
             else
                 count = 0;
@@ -292,7 +140,7 @@ public class FourInLine {
         // check for vertical win
         for(int i = 0; i < this.board.getSize(); i++) {
             for(int j = 0; j < this.board.getSize(); j++) {
-                if(state.getArray()[i + j*8] == playerCharacter)
+                if(state.getValueAt(i + j*8) == playerCharacter)
                     count++;
                 else
                     count = 0;
@@ -305,7 +153,7 @@ public class FourInLine {
         return false;
     }
 
-    public String askForNextMove(Player player) {
+    private String askForNextMove(Player player) {
         int [] xy = new int [2];
         Scanner scanner = new Scanner(System.in);
         System.out.print(player.getId() + "\'s next move: ");
@@ -355,38 +203,197 @@ public class FourInLine {
         }
         this.maxMoveTime = Integer.parseInt(input);
     }
+    /* End helper functions for playAgent and playOtherPLayer */
 
-    private boolean isInt(String s) {
-        boolean isValid = false;
-        try {
-            Integer.parseInt(s);
-            isValid = true;
+    private String alphaBetaSearch(State state, int depth) {
+        if(this.moveCount < 2) {
+            int [] bestFirstMove = {27,28,35,36};
+            agentMove = bestFirstMove[new Random().nextInt(4)];
+            while( !validCell( (char)(agentMove/8 + 'a')+""+((agentMove %8)+1) ) )
+                agentMove = bestFirstMove[new Random().nextInt(4)];
         }
-        catch (NumberFormatException e){}
-        return isValid;
+        else {
+            this.searchDepth = depth;
+            Node currentState = new Node(state,true,0);
+            int v = maxValue(currentState,-1000000,1000000);
+        }
+
+        String row = (char)(agentMove /8 + 'a') + "";
+        String column = Integer.toString((agentMove %8)+1);
+        agentMove = 0;
+        return row+column;
     }
+
+    /* Helper functions for alphaBetaSearch */
+    private int maxValue(Node node, int a, int b) {
+        int terminalValue = terminalValue(node);
+        if(terminalValue != 0)
+            return terminalValue;
+
+        if(node.getDepth() == this.searchDepth)
+            return utility(node);
+
+        int v = -10000000; // -infinity
+
+        Node currentNode = node.nextSuccessor();
+        while(currentNode != null) {
+            int minValue = minValue(currentNode,a,b);
+            /*if(node.getDepth() == 0) {
+                System.out.print((char) (currentNode.getMoveIndex() / 8 + 'a') + "" + ((currentNode.getMoveIndex() % 8) + 1) + "-" + minValue + " ");
+                if(((currentNode.getMoveIndex() % 8) + 1) == 8)
+                    System.out.println();
+            }*/
+            if(minValue > v)
+                v = minValue;
+            if(v >= b)
+                return v;
+            if(v > a) {
+                if(node.getDepth() == 0)
+                    agentMove = currentNode.getMoveIndex();
+                a = v;
+            }
+            currentNode = node.nextSuccessor();
+        }
+
+        return v;
+    }
+
+    private int minValue(Node node, int a, int b) {
+        int terminalValue = terminalValue(node);
+        if(terminalValue != 0)
+            return terminalValue;
+
+        if(node.getDepth() == this.searchDepth)
+            return utility(node);
+
+        int v = 10000000;
+
+        Node currentNode = node.nextSuccessor();
+        while(currentNode != null) {
+            v = Math.min(v,maxValue(currentNode,a,b));
+            if(v <= a)
+                return v;
+            b = Math.min(b,v);
+            currentNode = node.nextSuccessor();
+        }
+
+        return v;
+    }
+
+    private int terminalValue(Node node) {
+        State state = node.getState();
+        String kill = "XXXX";
+        String opponentKill = "OOOO";
+        int value = 0;
+        String row;
+        String column;
+
+        for(int i = 0; i < this.board.getSize(); i++) {
+            row = "" + state.getValueAt((8 * i)) + state.getValueAt((8 * i) + 1) + state.getValueAt((8 * i) + 2) + state.getValueAt((8 * i) + 3);
+            row += "" + state.getValueAt((8 * i) + 4) + state.getValueAt((8 * i) + 5) + state.getValueAt((8 * i) + 6) + state.getValueAt((8 * i) + 7);
+            column = "" + state.getValueAt(i) + state.getValueAt(8 + i) + state.getValueAt(16 + i) + state.getValueAt(24 + i);
+            column += "" + state.getValueAt(32 + i) + state.getValueAt(40 + i) + state.getValueAt(48 + i) + state.getValueAt(56 + i);
+
+            if (row.contains(opponentKill) || column.contains(opponentKill)) {
+                value += -10000;
+                break;
+            }
+            else if (row.contains(kill) || column.contains(kill)) {
+                value += 10000;
+                break;
+            }
+        }
+        return value;
+    }
+
+    private int utility(Node node) {
+        int value = 0;
+        value += killerMoveValue(node);
+        return value;
+    }
+
+    private int killerMoveValue(Node node) {
+        int value = 0;
+        State state = node.getState();
+
+        String inLine0 ="XX--";
+        String inLine1 = "--XX";
+        String inLine2 = "-XX-";
+        String inLine7 = "X-X-";
+        String inLine8 = "-X-X";
+
+        String inLine3 = "XXX-";
+        String inLine4 = "-XXX";
+        String inLine5 = "X-XX";
+        String inLine6 = "XX-X";
+
+        String setUp0 = "-XX--";
+        String setUp1 = "--XX-";
+        String killer0 = "-XXX-";
+
+        String opponentInLine0 = "OO--";
+        String opponentInLine1 = "--OO";
+        String opponentInLine2 = "-OO-";
+        String opponentInLine7 = "O-O-";
+        String opponentInLine8 = "-O-O";
+
+        String opponentInLine3 = "OOO-";
+        String opponentInLine4 = "-OOO";
+        String opponentInLine5 = "O-OO";
+        String opponentInLine6 = "OO-O";
+
+        String opponentSetUp0 = "-OO--";
+        String opponentSetUp1 = "--OO-";
+        String opponentKiller0 = "-OOO-";
+
+        String row;
+        String column;
+
+        for(int i = 0; i < this.board.getSize(); i++) {
+            row = "" + state.getValueAt((8 * i)) + state.getValueAt((8 * i) + 1) + state.getValueAt((8 * i) + 2) + state.getValueAt((8 * i) + 3);
+            row += "" + state.getValueAt((8 * i) + 4) + state.getValueAt((8 * i) + 5) + state.getValueAt((8 * i) + 6) + state.getValueAt((8 * i) + 7);
+            column = "" + state.getValueAt(i) + state.getValueAt(8 + i) + state.getValueAt(16 + i) + state.getValueAt(24 + i);
+            column += "" + state.getValueAt(32 + i) + state.getValueAt(40 + i) + state.getValueAt(48 + i) + state.getValueAt(56 + i);
+
+            if (row.contains(opponentKiller0) || column.contains(opponentKiller0))
+                value += -110;
+            else if (row.contains(killer0) || column.contains(killer0))
+                value += 100;
+            else if (row.contains(opponentSetUp0) || column.contains(opponentSetUp0)
+                    || row.contains(opponentSetUp1) || column.contains(opponentSetUp1))
+                value += -11;
+            else if (row.contains(setUp0) || column.contains(setUp0)
+                    || row.contains(setUp1) || column.contains(setUp1))
+                value += 10;
+            else if (row.contains(opponentInLine6) || column.contains(opponentInLine6)
+                    || row.contains(opponentInLine5) || column.contains(opponentInLine5)
+                    || row.contains(opponentInLine4) || column.contains(opponentInLine4)
+                    || row.contains(opponentInLine3) || column.contains(opponentInLine3))
+                value += -5;
+            else if (row.contains(inLine6) || column.contains(inLine6)
+                    || row.contains(inLine5) || column.contains(inLine5)
+                    || row.contains(inLine4) || column.contains(inLine4)
+                    || row.contains(inLine3) || column.contains(inLine3))
+                value += 5;
+            else if (row.contains(opponentInLine2) || column.contains(opponentInLine2)
+                    || row.contains(opponentInLine1) || column.contains(opponentInLine1)
+                    || row.contains(opponentInLine0) || column.contains(opponentInLine0)
+                    || row.contains(opponentInLine7) || column.contains(opponentInLine7)
+                    || row.contains(opponentInLine8) || column.contains(opponentInLine8))
+                value += -2;
+            else if (row.contains(inLine0) || column.contains(inLine0)
+                    || row.contains(inLine1) || column.contains(inLine1)
+                    || row.contains(inLine2) || column.contains(inLine2)
+                    || row.contains(inLine7) || column.contains(inLine7)
+                    || row.contains(inLine8) || column.contains(inLine8))
+                value += 2;
+        }
+        return value;
+    }
+    /* End of helper functions for alphaBetaSearch */
 
     public static void main(String [] args) {
         FourInLine FourInLine = new FourInLine();
         FourInLine.playAgent();
-
-
-
-        /*State state = new State(64);
-        for(int i = 0; i < state.size(); i++)
-            state.setValueAt('-',i);
-
-        state.setValueAt('X',1);
-        state.setValueAt('X',2);
-        state.setValueAt('X',10);
-        state.setValueAt('X',11);
-        state.setValueAt('X',19);
-        state.setValueAt('X',20);
-        state.setValueAt('X',28);
-        state.setValueAt('X',29);
-        state.setValueAt('X',37);
-        state.setValueAt('X',38);*/
-
-
     }
 }

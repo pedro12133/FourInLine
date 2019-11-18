@@ -11,7 +11,7 @@ public class Board {
         this.size = size;
         this.state = new State(this.size*this.size);
         for(int i = 0; i < this.size*this.size; i++)
-            this.state.getArray()[i] = '-';
+            this.state.setValueAt('-', i);
         initializeBoard(players);
     }
 
@@ -27,7 +27,7 @@ public class Board {
                 this.board.add(row);
             if(i%this.size == 0)
                 row = yLabels[i/this.size]+"  ";
-            row = row+this.state.getArray()[i]+"  ";
+            row = row+this.state.getValueAt(i)+"  ";
         }
         this.board.add(row);
     }
@@ -41,7 +41,7 @@ public class Board {
         int row = move.charAt(0) - 'a';
         int column = Integer.parseInt(move.substring(1)) - 1;
         int i = row*8 + column;
-        this.state.getArray()[i] = playerCharacter;
+        this.state.setValueAt(playerCharacter, i);
         updateBoard(row, column, playerCharacter, moveCount, move);
     }
 

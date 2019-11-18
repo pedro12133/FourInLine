@@ -1,6 +1,5 @@
 public class Node {
     private State state;
-    private int value;
     private int depth;
     private boolean isMax;
     private int moveIndex;
@@ -8,7 +7,6 @@ public class Node {
 
     public Node(State state, boolean isMax, int depth) {
         this.state = state;
-        this.value = 0;
         this.isMax = isMax;
         this.depth = depth;
         this.currentSuccessorMoveIndex = -1;
@@ -20,7 +18,7 @@ public class Node {
     public Node nextSuccessor() {
         this.currentSuccessorMoveIndex++;
 
-        if(this.currentSuccessorMoveIndex >= this.state.size())
+        if(this.currentSuccessorMoveIndex >= this.state.getSize())
             return null;
 
         if(this.state.getValueAt(this.currentSuccessorMoveIndex) != '-')
@@ -45,33 +43,15 @@ public class Node {
 
     public void setState(State state) { this.state = state; }
 
-    public void setValue(int value) { this.value = value; }
-
     public void setDepth(int depth) { this.depth = depth; }
 
     public void setMoveIndex(int index) { this.moveIndex = index; }
 
     public State getState() { return state; }
 
-    public int getValue() { return value; }
-
     public int getDepth() {return depth;}
 
     public int getMoveIndex() { return moveIndex; }
-
-//    public class SortInAscendingValue implements Comparator<Node>
-//    {
-//        public int compare(Node n1, Node n2) {
-//            return n2.getValue() - n1.getValue();
-//        }
-//    }
-//    public class SortInDescendingValue implements Comparator<Node>
-//    {
-//        public int compare(Node n1, Node n2) {
-//            return n1.getValue() - n2.getValue();
-//        }
-//    }
-
 
 }
 
