@@ -28,12 +28,17 @@ public class FourInLine {
     }
 
     // Game Modes
-    public void playAgent() {
+    public void playAgent(int depth) {
+        this.searchDepth = depth;
         int agentTurn = agentTurn();
         this.board.print();
-
         while(this.winner == -1) {
+
             for(int i = 0; i < this.numOfPlayers; i++) {
+
+                if((moveCount == board.getState().getSize() - searchDepth))
+                    this.searchDepth--;
+
                 System.out.println("move count: " +moveCount);
                 Player currentPlayer = this.players[i];
                 String move;
@@ -41,7 +46,7 @@ public class FourInLine {
                 if(i != agentTurn)
                     move = askForNextMove(currentPlayer);
                 else {
-                    move = alphaBetaSearch(this.board.getState(), 4);
+                    move = alphaBetaSearch(this.board.getState());
                     System.out.println("Agent's move: "+move+" ");
                 }
 
@@ -54,7 +59,7 @@ public class FourInLine {
                     break;
                 }
             }
-            if(this.moveCount == 63) break;
+            if(this.moveCount >= 64) break;
         }
 
         if(this.winner != -1)
@@ -62,7 +67,6 @@ public class FourInLine {
         else
             System.out.println("Tie game");
     }
-
     public void playOtherPlayer() {
         this.board.print();
         while(this.winner == -1) {
@@ -93,7 +97,6 @@ public class FourInLine {
                 return i;
         return -1;
     }
-
     private boolean validCell(String cell) {
         Pattern pattern = Pattern.compile("[A-Ha-h][1-8]");
         Matcher matcher = pattern.matcher(cell);
@@ -109,7 +112,6 @@ public class FourInLine {
         }
         return false;
     }
-
     private boolean isInt(String s) {
         boolean isValid = false;
         try {
@@ -119,7 +121,6 @@ public class FourInLine {
         catch (NumberFormatException e){}
         return isValid;
     }
-
     private boolean playerWon(Player player) {
         char playerCharacter = player.getCharacter();
         State state = this.board.getState();
@@ -152,7 +153,6 @@ public class FourInLine {
 
         return false;
     }
-
     private String askForNextMove(Player player) {
         int [] xy = new int [2];
         Scanner scanner = new Scanner(System.in);
@@ -164,7 +164,6 @@ public class FourInLine {
         }
         return in.toLowerCase();
     }
-
     private void setPlayers() {
         Player agent = new Player("Agent", 'X');
         Player opponent = new Player("Opponent", 'O');
@@ -192,7 +191,6 @@ public class FourInLine {
             opponent.setTurn(1);
         }
     }
-
     private void setMaxTime() {
         Scanner s = new Scanner(System.in);
         System.out.print("Enter max number of seconds to make a move: ");
@@ -205,28 +203,37 @@ public class FourInLine {
     }
     /* End helper functions for playAgent and playOtherPLayer */
 
-    private String alphaBetaSearch(State state, int depth) {
+    private String alphaBetaSearch(State state) {
         if(this.moveCount < 2) {
             int [] bestFirstMove = {27,28,35,36};
-            agentMove = bestFirstMove[new Random().nextInt(4)];
-            while( !validCell( (char)(agentMove/8 + 'a')+""+((agentMove %8)+1) ) )
-                agentMove = bestFirstMove[new Random().nextInt(4)];
+            this.agentMove =28 /*bestFirstMove[new Random().nextInt(4)]*/;
+            while( !validCell( (char)(this.agentMove/8 + 'a')+""+((this.agentMove %8)+1) ) )
+                this.agentMove = bestFirstMove[new Random().nextInt(4)];
         }
         else {
-            this.searchDepth = depth;
             Node currentState = new Node(state,true,0);
-            int v = maxValue(currentState,-1000000,1000000);
+            System.out.println("depth: "+searchDepth);
+            if(this.searchDepth == 0) {
+                for (int i = 0; i < this.board.getState().getSize(); i++) {
+                    if (this.board.getState().getValueAt(i) == '-') {
+                        this.agentMove = i;
+                    }
+                }
+            }
+            else
+                maxValue(currentState,-1000000,1000000);
         }
 
-        String row = (char)(agentMove /8 + 'a') + "";
-        String column = Integer.toString((agentMove %8)+1);
-        agentMove = 0;
+        String row = (char)(this.agentMove /8 + 'a') + "";
+        String column = Integer.toString((this.agentMove %8)+1);
+        this.agentMove = 0;
         return row+column;
     }
 
     /* Helper functions for alphaBetaSearch */
     private int maxValue(Node node, int a, int b) {
         int terminalValue = terminalValue(node);
+
         if(terminalValue != 0)
             return terminalValue;
 
@@ -238,18 +245,18 @@ public class FourInLine {
         Node currentNode = node.nextSuccessor();
         while(currentNode != null) {
             int minValue = minValue(currentNode,a,b);
-            /*if(node.getDepth() == 0) {
+            if(node.getDepth() == 0) {
                 System.out.print((char) (currentNode.getMoveIndex() / 8 + 'a') + "" + ((currentNode.getMoveIndex() % 8) + 1) + "-" + minValue + " ");
                 if(((currentNode.getMoveIndex() % 8) + 1) == 8)
                     System.out.println();
-            }*/
+            }
             if(minValue > v)
                 v = minValue;
             if(v >= b)
                 return v;
             if(v > a) {
                 if(node.getDepth() == 0)
-                    agentMove = currentNode.getMoveIndex();
+                    this.agentMove = currentNode.getMoveIndex();
                 a = v;
             }
             currentNode = node.nextSuccessor();
@@ -257,7 +264,6 @@ public class FourInLine {
 
         return v;
     }
-
     private int minValue(Node node, int a, int b) {
         int terminalValue = terminalValue(node);
         if(terminalValue != 0)
@@ -279,7 +285,6 @@ public class FourInLine {
 
         return v;
     }
-
     private int terminalValue(Node node) {
         State state = node.getState();
         String kill = "XXXX";
@@ -299,22 +304,18 @@ public class FourInLine {
                 break;
             }
             else if (row.contains(kill) || column.contains(kill)) {
-                value += 10000;
+                value += 10000 - node.getDepth();
                 break;
             }
         }
         return value;
     }
-
     private int utility(Node node) {
         int value = 0;
-        value += killerMoveValue(node);
-        return value;
-    }
-
-    private int killerMoveValue(Node node) {
-        int value = 0;
         State state = node.getState();
+
+        boolean containsKillerSetUp = false;
+        boolean contains3inLine = false;
 
         String inLine0 ="XX--";
         String inLine1 = "--XX";
@@ -329,7 +330,11 @@ public class FourInLine {
 
         String setUp0 = "-XX--";
         String setUp1 = "--XX-";
+        String setUp2 = "-X-X-";
         String killer0 = "-XXX-";
+
+        boolean opponentContainsKillerSetUp = false;
+        boolean opponentContains3inLine = false;
 
         String opponentInLine0 = "OO--";
         String opponentInLine1 = "--OO";
@@ -344,6 +349,7 @@ public class FourInLine {
 
         String opponentSetUp0 = "-OO--";
         String opponentSetUp1 = "--OO-";
+        String opponentSetUp2 = "-O-O-";
         String opponentKiller0 = "-OOO-";
 
         String row;
@@ -360,21 +366,31 @@ public class FourInLine {
             else if (row.contains(killer0) || column.contains(killer0))
                 value += 100;
             else if (row.contains(opponentSetUp0) || column.contains(opponentSetUp0)
-                    || row.contains(opponentSetUp1) || column.contains(opponentSetUp1))
+                    || row.contains(opponentSetUp1) || column.contains(opponentSetUp1)
+                    || row.contains(opponentSetUp2) || column.contains(opponentSetUp2)) {
                 value += -11;
+                opponentContainsKillerSetUp = true;
+            }
             else if (row.contains(setUp0) || column.contains(setUp0)
-                    || row.contains(setUp1) || column.contains(setUp1))
+                    || row.contains(setUp1) || column.contains(setUp1)
+                    || row.contains(setUp2) || column.contains(setUp2)) {
                 value += 10;
+                containsKillerSetUp = true;
+            }
             else if (row.contains(opponentInLine6) || column.contains(opponentInLine6)
                     || row.contains(opponentInLine5) || column.contains(opponentInLine5)
                     || row.contains(opponentInLine4) || column.contains(opponentInLine4)
-                    || row.contains(opponentInLine3) || column.contains(opponentInLine3))
+                    || row.contains(opponentInLine3) || column.contains(opponentInLine3)) {
                 value += -5;
+                opponentContains3inLine = true;
+            }
             else if (row.contains(inLine6) || column.contains(inLine6)
                     || row.contains(inLine5) || column.contains(inLine5)
                     || row.contains(inLine4) || column.contains(inLine4)
-                    || row.contains(inLine3) || column.contains(inLine3))
+                    || row.contains(inLine3) || column.contains(inLine3)) {
                 value += 5;
+                contains3inLine = true;
+            }
             else if (row.contains(opponentInLine2) || column.contains(opponentInLine2)
                     || row.contains(opponentInLine1) || column.contains(opponentInLine1)
                     || row.contains(opponentInLine0) || column.contains(opponentInLine0)
@@ -388,12 +404,18 @@ public class FourInLine {
                     || row.contains(inLine8) || column.contains(inLine8))
                 value += 2;
         }
+
+        if(opponentContainsKillerSetUp && opponentContains3inLine)
+            value -= 110;
+        if(containsKillerSetUp && contains3inLine)
+            value += 100;
+
         return value;
     }
     /* End of helper functions for alphaBetaSearch */
 
     public static void main(String [] args) {
         FourInLine FourInLine = new FourInLine();
-        FourInLine.playAgent();
+        FourInLine.playAgent(4);
     }
 }
