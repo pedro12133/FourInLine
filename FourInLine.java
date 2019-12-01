@@ -334,23 +334,6 @@ public class FourInLine {
         }
         return value;
     }
-    private String getColumnSubstring(State state, int x, int start, int end) {
-        String column = "";
-        column = "" + state.getValueAt(x) + state.getValueAt(8 + x);
-        column += "" + state.getValueAt(16 + x) + state.getValueAt(24 + x);
-        column += "" + state.getValueAt(32 + x) + state.getValueAt(40 + x);
-        column += "" + state.getValueAt(48 + x) + state.getValueAt(56 + x);
-        return column.substring(start,end);
-    }
-    private String getRowSubstring(State state, int x, int start, int end) {
-        String row = "";
-        x = 8*x;
-        row = "" + state.getValueAt(x) + state.getValueAt(x + 1);
-        row += "" + state.getValueAt(x + 2) + state.getValueAt(x + 3);
-        row += "" + state.getValueAt(x + 4) + state.getValueAt(x + 5);
-        row += "" + state.getValueAt(x + 6) + state.getValueAt(x + 7);
-        return row.substring(start,end);
-    }
     private int utility(Node node) {
         int value = 0;
         State state = node.getState();
@@ -397,11 +380,17 @@ public class FourInLine {
         String column;
 
         for(int i = 0; i < this.board.getSize(); i++) {
-            row = "" + state.getValueAt((8 * i)) + state.getValueAt((8 * i) + 1) + state.getValueAt((8 * i) + 2) + state.getValueAt((8 * i) + 3);
-            row += "" + state.getValueAt((8 * i) + 4) + state.getValueAt((8 * i) + 5) + state.getValueAt((8 * i) + 6) + state.getValueAt((8 * i) + 7);
-            column = "" + state.getValueAt(i) + state.getValueAt(8 + i) + state.getValueAt(16 + i) + state.getValueAt(24 + i);
-            column += "" + state.getValueAt(32 + i) + state.getValueAt(40 + i) + state.getValueAt(48 + i) + state.getValueAt(56 + i);
+            int x = 8*i;
+            row = "" + state.getValueAt(x) + state.getValueAt(x + 1);
+            row += "" + state.getValueAt(x + 2) + state.getValueAt(x + 3);
+            row += "" + state.getValueAt(x + 4) + state.getValueAt(x + 5);
+            row += "" + state.getValueAt(x + 6) + state.getValueAt(x + 7);
 
+            x = i;
+            column = "" + state.getValueAt(x) + state.getValueAt(8 + x);
+            column += "" + state.getValueAt(16 + x) + state.getValueAt(24 + x);
+            column += "" + state.getValueAt(32 + x) + state.getValueAt(40 + x);
+            column += "" + state.getValueAt(48 + x) + state.getValueAt(56 + x);
             if (row.contains(opponentKiller0) || column.contains(opponentKiller0))
                 return -500;
             else if (row.contains(killer0) || column.contains(killer0))
