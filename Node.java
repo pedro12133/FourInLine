@@ -14,7 +14,6 @@ public class Node {
     }
 
     public void restartSuccessors() { this.currentSuccessorMoveIndex = 0; }
-
     public Node nextSuccessor() {
         this.currentSuccessorMoveIndex++;
 
@@ -39,19 +38,14 @@ public class Node {
 
     }
 
-    public boolean isMax() {return isMax;}
-
     public void setState(State state) { this.state = state; }
-
     public void setDepth(int depth) { this.depth = depth; }
-
     public void setMoveIndex(int index) { this.moveIndex = index; }
 
     public State getState() { return state; }
-
     public int getDepth() {return depth;}
-
     public int getMoveIndex() { return moveIndex; }
+    public boolean isMax() {return isMax;}
 
 }
 

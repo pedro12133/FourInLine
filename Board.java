@@ -31,20 +31,6 @@ public class Board {
         }
         this.board.add(row);
     }
-
-    public void print() {
-        for(String row: this.board)
-            System.out.println(row);
-    }
-
-    public void setMove(String move, char playerCharacter, int moveCount) {
-        int row = move.charAt(0) - 'a';
-        int column = Integer.parseInt(move.substring(1)) - 1;
-        int i = row*8 + column;
-        this.state.setValueAt(playerCharacter, i);
-        updateBoard(row, column, playerCharacter, moveCount, move);
-    }
-
     private void updateBoard(int row, int column, char playerCharacter, int moveCount, String move) {
 
         // update state
@@ -79,8 +65,18 @@ public class Board {
             }
         }
     }
+    public void setMove(String move, char playerCharacter, int moveCount) {
+        int row = move.charAt(0) - 'a';
+        int column = Integer.parseInt(move.substring(1)) - 1;
+        int i = row*8 + column;
+        this.state.setValueAt(playerCharacter, i);
+        updateBoard(row, column, playerCharacter, moveCount, move);
+    }
+    public void print() {
+        for(String row: this.board)
+            System.out.println(row);
+    }
 
     public State getState() {return this.state;}
-
     public int getSize() {return this.size;}
 }

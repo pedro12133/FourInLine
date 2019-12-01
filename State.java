@@ -6,7 +6,6 @@ public class State {
         for(int i = 0; i < size; i++)
             this.state[i] = '-';
     }
-
     public State(State state) {
         this.state = new char[state.getSize()];
         for(int i = 0; i < state.getSize(); i++)
@@ -20,7 +19,6 @@ public class State {
     public char getValueAt(int i) {
         return this.state[i];
     }
-
     public int getSize() {return state.length;}
 
 
