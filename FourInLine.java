@@ -40,7 +40,6 @@ public class FourInLine {
                 if((moveCount == board.getState().getSize() - searchDepth))
                     this.searchDepth--;
 
-                System.out.println("move count: " +moveCount);
                 Player currentPlayer = this.players[i];
                 String move;
 
@@ -215,7 +214,6 @@ public class FourInLine {
             try {
                 this.startTime = System.currentTimeMillis();
                 Node currentState = new Node(state,true,0);
-                System.out.println("depth: "+searchDepth);
                 if(this.searchDepth == 0) {
                     for (int i = 0; i < this.board.getState().getSize(); i++) {
                         if (this.board.getState().getValueAt(i) == '-') {
