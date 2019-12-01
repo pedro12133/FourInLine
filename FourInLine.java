@@ -14,6 +14,7 @@ public class FourInLine {
     private int winner;
     private int searchDepth;
     private int agentMove;
+    private long startTime;
 
     // Constructor
     public FourInLine() {
@@ -22,7 +23,7 @@ public class FourInLine {
         this.players = new Player[2];
         this.moveCount = 0;
         this.winner = -1;
-        //setMaxTime();
+        setMaxTime();
         setPlayers();
         this.board = new Board(8, this.players);
     }
@@ -204,24 +205,32 @@ public class FourInLine {
     /* End helper functions for playAgent and playOtherPLayer */
 
     private String alphaBetaSearch(State state) {
+
         if(this.moveCount < 2) {
             int [] bestFirstMove = {27,28,35,36};
-            this.agentMove =28 /*bestFirstMove[new Random().nextInt(4)]*/;
+            this.agentMove = bestFirstMove[new Random().nextInt(4)];
             while( !validCell( (char)(this.agentMove/8 + 'a')+""+((this.agentMove %8)+1) ) )
                 this.agentMove = bestFirstMove[new Random().nextInt(4)];
         }
         else {
-            Node currentState = new Node(state,true,0);
-            System.out.println("depth: "+searchDepth);
-            if(this.searchDepth == 0) {
-                for (int i = 0; i < this.board.getState().getSize(); i++) {
-                    if (this.board.getState().getValueAt(i) == '-') {
-                        this.agentMove = i;
+            try {
+                this.startTime = System.currentTimeMillis();
+                Node currentState = new Node(state,true,0);
+                System.out.println("depth: "+searchDepth);
+                if(this.searchDepth == 0) {
+                    for (int i = 0; i < this.board.getState().getSize(); i++) {
+                        if (this.board.getState().getValueAt(i) == '-') {
+                            this.agentMove = i;
+                        }
                     }
                 }
+                else
+                    maxValue(currentState,-1000000,1000000);
             }
-            else
-                maxValue(currentState,-1000000,1000000);
+            catch (OutOfTimeException e) {
+                System.out.println(e);
+            }
+
         }
 
         String row = (char)(this.agentMove /8 + 'a') + "";
@@ -231,9 +240,12 @@ public class FourInLine {
     }
 
     /* Helper functions for alphaBetaSearch */
-    private int maxValue(Node node, int a, int b) {
-        int terminalValue = terminalValue(node);
+    private int maxValue(Node node, int a, int b) throws OutOfTimeException {
 
+        if(OutOfTime())
+            throw new OutOfTimeException();
+
+        int terminalValue = terminalValue(node);
         if(terminalValue != 0)
             return terminalValue;
 
@@ -241,17 +253,10 @@ public class FourInLine {
             return utility(node);
 
         int v = -10000000; // -infinity
-
         Node currentNode = node.nextSuccessor();
         while(currentNode != null) {
             int minValue = minValue(currentNode,a,b);
-            if(node.getDepth() == 0) {
-                System.out.print((char) (currentNode.getMoveIndex() / 8 + 'a') + "" + ((currentNode.getMoveIndex() % 8) + 1) + "-" + minValue + " ");
-                if(((currentNode.getMoveIndex() % 8) + 1) == 8)
-                    System.out.println();
-            }
-            if(minValue > v)
-                v = minValue;
+            v = Math.max(minValue,v);
             if(v >= b)
                 return v;
             if(v > a) {
@@ -264,7 +269,11 @@ public class FourInLine {
 
         return v;
     }
-    private int minValue(Node node, int a, int b) {
+    private int minValue(Node node, int a, int b) throws OutOfTimeException {
+
+        if(OutOfTime())
+            throw new OutOfTimeException();
+
         int terminalValue = terminalValue(node);
         if(terminalValue != 0)
             return terminalValue;
@@ -289,15 +298,33 @@ public class FourInLine {
         State state = node.getState();
         String kill = "XXXX";
         String opponentKill = "OOOO";
+        String substring1 = "";
+        String substring2 = "";
+        String twoInLine1 = "--XX";
+        String twoInLine2= "XX--";
+        String singleXH = "-X---";
+        String singleXL = "---X-";
+        boolean forceBlock3 = false;
+        boolean forceBlockSetup = false;
         int value = 0;
         String row;
         String column;
+        int c = -1;
+        int x = -1;
 
         for(int i = 0; i < this.board.getSize(); i++) {
-            row = "" + state.getValueAt((8 * i)) + state.getValueAt((8 * i) + 1) + state.getValueAt((8 * i) + 2) + state.getValueAt((8 * i) + 3);
-            row += "" + state.getValueAt((8 * i) + 4) + state.getValueAt((8 * i) + 5) + state.getValueAt((8 * i) + 6) + state.getValueAt((8 * i) + 7);
-            column = "" + state.getValueAt(i) + state.getValueAt(8 + i) + state.getValueAt(16 + i) + state.getValueAt(24 + i);
-            column += "" + state.getValueAt(32 + i) + state.getValueAt(40 + i) + state.getValueAt(48 + i) + state.getValueAt(56 + i);
+
+            x = 8*i;
+            row = "" + state.getValueAt(x) + state.getValueAt(x + 1);
+            row += "" + state.getValueAt(x + 2) + state.getValueAt(x + 3);
+            row += "" + state.getValueAt(x + 4) + state.getValueAt(x + 5);
+            row += "" + state.getValueAt(x + 6) + state.getValueAt(x + 7);
+
+            x = i;
+            column = "" + state.getValueAt(x) + state.getValueAt(8 + x);
+            column += "" + state.getValueAt(16 + x) + state.getValueAt(24 + x);
+            column += "" + state.getValueAt(32 + x) + state.getValueAt(40 + x);
+            column += "" + state.getValueAt(48 + x) + state.getValueAt(56 + x);
 
             if (row.contains(opponentKill) || column.contains(opponentKill)) {
                 value += -10000;
@@ -307,15 +334,33 @@ public class FourInLine {
                 value += 10000 - node.getDepth();
                 break;
             }
+
         }
         return value;
+    }
+    private String getColumnSubstring(State state, int x, int start, int end) {
+        String column = "";
+        column = "" + state.getValueAt(x) + state.getValueAt(8 + x);
+        column += "" + state.getValueAt(16 + x) + state.getValueAt(24 + x);
+        column += "" + state.getValueAt(32 + x) + state.getValueAt(40 + x);
+        column += "" + state.getValueAt(48 + x) + state.getValueAt(56 + x);
+        return column.substring(start,end);
+    }
+    private String getRowSubstring(State state, int x, int start, int end) {
+        String row = "";
+        x = 8*x;
+        row = "" + state.getValueAt(x) + state.getValueAt(x + 1);
+        row += "" + state.getValueAt(x + 2) + state.getValueAt(x + 3);
+        row += "" + state.getValueAt(x + 4) + state.getValueAt(x + 5);
+        row += "" + state.getValueAt(x + 6) + state.getValueAt(x + 7);
+        return row.substring(start,end);
     }
     private int utility(Node node) {
         int value = 0;
         State state = node.getState();
 
-        boolean containsKillerSetUp = false;
-        boolean contains3inLine = false;
+        int setupCount = 0;
+        int threeInLineCount = 0;
 
         String inLine0 ="XX--";
         String inLine1 = "--XX";
@@ -333,8 +378,8 @@ public class FourInLine {
         String setUp2 = "-X-X-";
         String killer0 = "-XXX-";
 
-        boolean opponentContainsKillerSetUp = false;
-        boolean opponentContains3inLine = false;
+        int opponentSetupCount = 0;
+        int opponentThreeInLineCount = 0;
 
         String opponentInLine0 = "OO--";
         String opponentInLine1 = "--OO";
@@ -362,60 +407,467 @@ public class FourInLine {
             column += "" + state.getValueAt(32 + i) + state.getValueAt(40 + i) + state.getValueAt(48 + i) + state.getValueAt(56 + i);
 
             if (row.contains(opponentKiller0) || column.contains(opponentKiller0))
-                value += -110;
+                return -500;
             else if (row.contains(killer0) || column.contains(killer0))
-                value += 100;
-            else if (row.contains(opponentSetUp0) || column.contains(opponentSetUp0)
-                    || row.contains(opponentSetUp1) || column.contains(opponentSetUp1)
-                    || row.contains(opponentSetUp2) || column.contains(opponentSetUp2)) {
-                value += -11;
-                opponentContainsKillerSetUp = true;
+                return 500;
+            else if(row.contains(opponentSetUp2)) {
+                value += -25;
+                opponentSetupCount++;
+                if(opponentSetupCount > 1)
+                    return -500;
             }
-            else if (row.contains(setUp0) || column.contains(setUp0)
-                    || row.contains(setUp1) || column.contains(setUp1)
-                    || row.contains(setUp2) || column.contains(setUp2)) {
+            else if (row.contains(opponentSetUp0) || row.contains(opponentSetUp1)) {
+                value += -15;
+                opponentSetupCount++;
+                if(opponentSetupCount > 1)
+                    return -500;
+            }
+            else if(row.contains(setUp2)) {
+                value += 20;
+                setupCount++;
+                if(setupCount > 1)
+                    return 500;
+            }
+            else if(row.contains(setUp0) || row.contains(setUp1)) {
                 value += 10;
-                containsKillerSetUp = true;
+                setupCount++;
+                if(setupCount > 1)
+                    return 500;
             }
-            else if (row.contains(opponentInLine6) || column.contains(opponentInLine6)
-                    || row.contains(opponentInLine5) || column.contains(opponentInLine5)
-                    || row.contains(opponentInLine4) || column.contains(opponentInLine4)
-                    || row.contains(opponentInLine3) || column.contains(opponentInLine3)) {
-                value += -5;
-                opponentContains3inLine = true;
+            else if (row.contains(opponentInLine6) || row.contains(opponentInLine5)
+                    || row.contains(opponentInLine4) || row.contains(opponentInLine3)) {
+                value += -7;
+                opponentThreeInLineCount++;
+                if(opponentThreeInLineCount > 1)
+                    return -500;
             }
-            else if (row.contains(inLine6) || column.contains(inLine6)
-                    || row.contains(inLine5) || column.contains(inLine5)
-                    || row.contains(inLine4) || column.contains(inLine4)
-                    || row.contains(inLine3) || column.contains(inLine3)) {
+            else if (row.contains(inLine6) || row.contains(inLine5)
+                    || row.contains(inLine4) || row.contains(inLine3)) {
                 value += 5;
-                contains3inLine = true;
+                threeInLineCount++;
+                if(threeInLineCount > 1)
+                    return 500;
             }
-            else if (row.contains(opponentInLine2) || column.contains(opponentInLine2)
-                    || row.contains(opponentInLine1) || column.contains(opponentInLine1)
-                    || row.contains(opponentInLine0) || column.contains(opponentInLine0)
-                    || row.contains(opponentInLine7) || column.contains(opponentInLine7)
-                    || row.contains(opponentInLine8) || column.contains(opponentInLine8))
-                value += -2;
-            else if (row.contains(inLine0) || column.contains(inLine0)
-                    || row.contains(inLine1) || column.contains(inLine1)
-                    || row.contains(inLine2) || column.contains(inLine2)
-                    || row.contains(inLine7) || column.contains(inLine7)
-                    || row.contains(inLine8) || column.contains(inLine8))
+            else if (row.contains(opponentInLine2) || row.contains(opponentInLine1)
+                    || row.contains(opponentInLine0) || row.contains(opponentInLine7)
+                    || row.contains(opponentInLine8)) {
+                value += -3;
+            }
+            else if (row.contains(inLine0) || row.contains(inLine1)
+                    || row.contains(inLine2) || row.contains(inLine7)
+                    || row.contains(inLine8))
+                value += 2;
+
+            if (column.contains(opponentSetUp0) || column.contains(opponentSetUp1)
+                    || column.contains(opponentSetUp2)) {
+                value += -15;
+                opponentSetupCount++;
+                if(opponentSetupCount > 1)
+                    return -500;
+            }
+            else if (column.contains(setUp0) || column.contains(setUp1)
+                    || column.contains(setUp2)){
+                value += 10;
+                setupCount++;
+                if(setupCount > 1)
+                    return 500;
+            }
+            else if (column.contains(opponentInLine6) || column.contains(opponentInLine5)
+                    || column.contains(opponentInLine4) || column.contains(opponentInLine3)){
+                value += -7;
+                opponentThreeInLineCount++;
+                if(opponentThreeInLineCount > 1)
+                    return -500;
+            }
+            else if (column.contains(inLine6) || column.contains(inLine5)
+                    || column.contains(inLine4) || column.contains(inLine3)) {
+                value += 5;
+                threeInLineCount++;
+                if(threeInLineCount > 1)
+                    return 500;
+            }
+            else if (column.contains(opponentInLine2) || column.contains(opponentInLine1)
+                    ||  column.contains(opponentInLine0) || column.contains(opponentInLine7)
+                    || column.contains(opponentInLine8))
+                value += -3;
+            else if (column.contains(inLine0) || column.contains(inLine1)
+                    || column.contains(inLine2) || column.contains(inLine7)
+                    || column.contains(inLine8))
                 value += 2;
         }
 
-        if(opponentContainsKillerSetUp && opponentContains3inLine)
-            value -= 110;
-        if(containsKillerSetUp && contains3inLine)
-            value += 100;
-
+        if(opponentSetupCount > 0 && opponentThreeInLineCount > 0)
+            return  -500;
+        if(setupCount > 0 && threeInLineCount > 0)
+            return 500;
         return value;
+    }
+    public boolean OutOfTime() {
+        long endTime = System.currentTimeMillis();
+        long runtime = endTime - this.startTime;
+        if(runtime >= this.maxMoveTime*1000)
+            return true;
+        return false;
     }
     /* End of helper functions for alphaBetaSearch */
 
     public static void main(String [] args) {
         FourInLine FourInLine = new FourInLine();
         FourInLine.playAgent(4);
+
+        /*String [] rows = new String[8];
+        rows[0] = " - - - - - - - - ";
+        rows[1] = " - - - - - - - - ";
+        rows[2] = " - - - X - - - - ";
+        rows[3] = " - - - X - - - - ";
+        rows[4] = " - X - - - X - - ";
+        rows[5] = " - - - - - - - - ";
+        rows[6] = " - - - - - - - - ";
+        rows[7] = " - - - - - - - - ";
+
+        String [] cols = new String[8];
+        cols[7] = " - - - - - - - - ";
+        cols[6] = " - - - - - - - - ";
+        cols[5] = " - - - - X - - - ";
+        cols[4] = " - - - - - - - - ";
+        cols[3] = " - - X X - - - - ";
+        cols[2] = " - - - - - - - - ";
+        cols[1] = " - - - - X - - - ";
+        cols[0] = " - - - - - - - - ";
+
+        int r = -1;
+        int c = -1;
+        String substring1 = "";
+        String substring2 = "";
+        String twoInLine1 = "--XX";
+        String twoInLine2= "XX--";
+        String singleXH = "-X---";
+        String singleXL = "---X-";
+        boolean forceBlock3 = false;
+        boolean forceBlockSetup = false;
+
+        for(int i = 0; i < 8; i++) {
+
+            //row or column contains --XX
+            if(rows[i].replaceAll(" ","").contains(twoInLine1)) {
+                System.out.println("has: --XX");
+                r = i; //row
+                c = rows[i].replaceAll(" ","").indexOf(twoInLine1); //col
+
+                // pattern at the bottom
+                if(r > 2 && r < 7) {
+                    if(c < 4) {
+                        System.out.println("1: --XX");
+                        //search force block 3
+                        substring1 = cols[c+1].replaceAll(" ","").substring(i-3,i+2);
+                        System.out.println(substring1);
+                        if(substring1.equals(singleXH))
+                            forceBlock3 = true;
+
+                        //search for force block killer setup
+                        substring1 = cols[c+3].replaceAll(" ","").substring(i-3,i+2);
+                        System.out.println(substring1);
+                        substring2 = rows[i-2].replaceAll(" ","").substring(c,c+5);
+                        System.out.println(substring2);
+                        if(substring1.equals(singleXL) && substring2.equals(singleXH))
+                            forceBlockSetup = true;
+
+                    }
+                }
+
+                //pattern at the top
+                if(r > 0 && r < 5) {
+                    if(c < 4) {
+
+                        System.out.println("2: --XX");
+                        //search force block 3
+                        substring1 = cols[c+1].replaceAll(" ","").substring(i-1,i+4);
+                        System.out.println(substring1);
+                        if(substring1.equals(singleXL))
+                            forceBlock3 = true;
+
+                        //search for force block killer setup
+                        substring1 = cols[c+3].replaceAll(" ","").substring(i-1,i+4);
+                        System.out.println(substring1);
+                        substring2 = rows[i+2].replaceAll(" ","").substring(c,c+5);
+                        System.out.println(substring2);
+                        if(substring1.equals(singleXH) && substring2.equals(singleXH))
+                            forceBlockSetup = true;
+                    }
+                }
+            }
+
+            //row contains XX--
+            if(rows[i].replaceAll(" ","").contains(twoInLine2)) {
+                System.out.println("has: XX--");
+                r = i; //row
+                c = rows[i].replaceAll(" ","").indexOf(twoInLine2); //col
+
+                //pattern at the top
+                if(r > 2 && r < 7) {
+                    if(c > 0 && c < 5) {
+
+                        System.out.println("1: XX--");
+                        //search force block 3
+                        substring1 = cols[c+2].replaceAll(" ","").substring(i-3,i+2);
+                        System.out.println(substring1);
+                        if(substring1.equals(singleXH))
+                            forceBlock3 = true;
+
+                        //search for force block killer setup
+                        substring1 = cols[c].replaceAll(" ","").substring(i-3,i+2);
+                        System.out.println(substring1);
+                        substring2 = rows[i-2].replaceAll(" ","").substring(c-1,c+4);
+                        System.out.println(substring2);
+                        if(substring1.equals(singleXL) && substring2.equals(singleXL))
+                            forceBlockSetup = true;
+
+                    }
+                }
+
+                //pattern at the top
+                if(r > 0 && r < 5) {
+                    if(c > 0 && c < 5) {
+                        System.out.println("2: XX--");
+                        //search force block 3
+                        substring1 = cols[c+2].replaceAll(" ","").substring(i-1,i+4);
+                        System.out.println(substring1);
+                        if(substring1.equals(singleXL))
+                            forceBlock3 = true;
+
+                        //search for force block killer setup
+                        substring1 = cols[c].replaceAll(" ","").substring(i-1,i+4);
+                        System.out.println(substring1);
+                        substring2 = rows[i+2].replaceAll(" ","").substring(c-1,c+4);
+                        System.out.println(substring2);
+                        if(substring1.equals(singleXH) && substring2.equals(singleXL))
+                            forceBlockSetup = true;
+                    }
+                }
+            }
+
+            if(cols[i].replaceAll(" ","").contains(twoInLine1)) {
+                System.out.println("has: --XX");
+                r = i; //row
+                c = rows[i].replaceAll(" ","").indexOf(twoInLine1); //col
+
+                // pattern at the bottom
+                if(r > 2 && r < 7) {
+                    if(c < 4) {
+                        System.out.println("1: --XX");
+                        //search force block 3
+                        substring1 = cols[c+1].replaceAll(" ","").substring(i-3,i+2);
+                        System.out.println(substring1);
+                        if(substring1.equals(singleXH))
+                            forceBlock3 = true;
+
+                        //search for force block killer setup
+                        substring1 = cols[c+3].replaceAll(" ","").substring(i-3,i+2);
+                        System.out.println(substring1);
+                        substring2 = rows[i-2].replaceAll(" ","").substring(c,c+5);
+                        System.out.println(substring2);
+                        if(substring1.equals(singleXL) && substring2.equals(singleXH))
+                            forceBlockSetup = true;
+
+                    }
+                }
+
+                //pattern at the top
+                if(r > 0 && r < 5) {
+                    if(c < 4) {
+
+                        System.out.println("2: --XX");
+                        //search force block 3
+                        substring1 = cols[c+1].replaceAll(" ","").substring(i-1,i+4);
+                        System.out.println(substring1);
+                        if(substring1.equals(singleXL))
+                            forceBlock3 = true;
+
+                        //search for force block killer setup
+                        substring1 = cols[c+3].replaceAll(" ","").substring(i-1,i+4);
+                        System.out.println(substring1);
+                        substring2 = rows[i+2].replaceAll(" ","").substring(c,c+5);
+                        System.out.println(substring2);
+                        if(substring1.equals(singleXH) && substring2.equals(singleXH))
+                            forceBlockSetup = true;
+                    }
+                }
+            }
+        }
+
+        if(forceBlock3 && forceBlockSetup)
+            System.out.println("we got a live one");*/
+
+        /*//row contains --XX
+            if(row.contains(inLine1)) {
+                c = row.indexOf(inLine1); //col
+
+                //pattern at the bottom
+                if(i > 2 && i < 7) {
+                    if(c < 4) {
+
+                        //search force block 3
+                        substring1 = getColumnSubstring(state, c+1,i-3,i+2);
+                        if(substring1.equals(singleXH))
+                            forceBlock3 = true;
+
+                        //search for force block killer setup
+                        substring1 = getColumnSubstring(state, c+3,i-3,i+2);
+                        substring2 = getRowSubstring(state,i-2,c,c+5);
+                        if(substring1.equals(singleXL) && substring2.equals(singleXH))
+                            forceBlockSetup = true;
+
+                    }
+                }
+
+                //pattern at the top
+                if(i > 0 && i < 5) {
+                    if(c < 4) {
+
+                        //search force block 3
+                        substring1 = getColumnSubstring(state, c+1, i-1, i+4);
+                        if(substring1.equals(singleXL))
+                            forceBlock3 = true;
+
+                        //search for force block killer setup
+                        substring1 = getColumnSubstring(state, c+3, i-1, i+4);
+                        substring2 = getRowSubstring(state,i+2,c,c+5);
+                        if(substring1.equals(singleXH) && substring2.equals(singleXH))
+                            forceBlockSetup = true;
+                    }
+                }
+            }
+
+            //row contains XX--
+            if(row.contains(inLine0)) {
+                c = row.indexOf(inLine0); //col
+
+                //pattern at the top
+                if(i > 2 && i < 7) {
+                    if(c > 0 && c < 5) {
+
+                        //search force block 3
+                        substring1 = getColumnSubstring(state, c+2, i-3, i+2);
+                        if(substring1.equals(singleXH))
+                            forceBlock3 = true;
+
+                        //search for force block killer setup
+                        substring1 = getColumnSubstring(state, c, i-3, i+2);
+                        substring2 = getRowSubstring(state,i-2,c-1,c+4);
+                        if(substring1.equals(singleXL) && substring2.equals(singleXL))
+                            forceBlockSetup = true;
+
+                    }
+                }
+
+                //pattern at the bottom
+                if(i > 0 && i < 5) {
+                    if(c > 0 && c < 5) {
+
+                        //search force block 3
+                        substring1 = getColumnSubstring(state, c+2, i-1, i+4);
+                        if(substring1.equals(singleXL))
+                            forceBlock3 = true;
+
+                        //search for force block killer setup
+                        substring1 = getColumnSubstring(state, c, i-1, i+4);
+                        substring2 = getRowSubstring(state,i+2,c-1,c+4);
+                        if(substring1.equals(singleXH) && substring2.equals(singleXL))
+                            forceBlockSetup = true;
+                    }
+                }
+            }
+
+            //column contains --XX
+            if(column.contains(inLine1)) {
+                c = column.indexOf(inLine1); //row
+
+                //pattern at the right
+                if(c < 4) {
+                    if(i > 2 && i < 7) {
+
+                        //search force block 3
+                        substring1 = getRowSubstring(state, c+1,i-3,i+2);
+                        if(substring1.equals(singleXH))
+                            forceBlock3 = true;
+
+                        //search for force block killer setup
+                        substring1 = getRowSubstring(state, c+3,i-3,i+2);
+                        substring2 = getColumnSubstring(state,i-2,c,c+5);
+                        if(substring1.equals(singleXL) && substring2.equals(singleXH))
+                            forceBlockSetup = true;
+
+                    }
+                }
+
+                //pattern at the left
+                if(c < 4) {
+                    if(i > 0 && i < 5) {
+
+                        //search force block 3
+                        substring1 = getRowSubstring(state, c+1, i-1, i+4);
+                        if(substring1.equals(singleXL))
+                            forceBlock3 = true;
+
+                        //search for force block killer setup
+                        substring1 = getRowSubstring(state, c+3, i-1, i+4);
+                        substring2 = getColumnSubstring(state,i+2,c,c+5);
+                        if(substring1.equals(singleXH) && substring2.equals(singleXH))
+                            forceBlockSetup = true;
+                    }
+                }
+            }
+
+            //column contains XX--
+            if(column.contains(inLine0)) {
+                c = column.indexOf(inLine0); //row
+
+                //pattern at the right
+                if(c > 0 && c < 5) {
+                    if(i > 2 && i < 7) {
+
+                        //search force block 3
+                        substring1 = getRowSubstring(state, c+2, i-3, i+2);
+                        if(substring1.equals(singleXH))
+                            forceBlock3 = true;
+
+                        //search for force block killer setup
+                        substring1 = getRowSubstring(state, c, i-3, i+2);
+                        substring2 = getColumnSubstring(state,i-2,c-1,c+4);
+                        if(substring1.equals(singleXL) && substring2.equals(singleXL))
+                            forceBlockSetup = true;
+
+                    }
+                }
+
+                //pattern at the left
+                if(c > 0 && c < 5) {
+                    if(i > 0 && i < 5) {
+
+                        //search force block 3
+                        substring1 = getRowSubstring(state, c+2, i-1, i+4);
+                        if(substring1.equals(singleXL))
+                            forceBlock3 = true;
+
+                        //search for force block killer setup
+                        substring1 = getRowSubstring(state, c, i-1, i+4);
+                        substring2 = getColumnSubstring(state,i+2,c-1,c+4);
+                        if(substring1.equals(singleXH) && substring2.equals(singleXL))
+                            forceBlockSetup = true;
+                    }
+                }
+            }
+
+            if(forceBlock3 && forceBlockSetup) {
+                value += 10000;
+                break;
+            }*/
+
+        /*if(node.getDepth() == 0) {
+            System.out.print((char) (currentNode.getMoveIndex() / 8 + 'a') + "" + ((currentNode.getMoveIndex() % 8) + 1) + ":" + minValue + " ");
+            if(((currentNode.getMoveIndex() % 8) + 1) == 8)
+                System.out.println();
+        }*/
+
     }
 }
