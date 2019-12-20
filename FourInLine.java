@@ -294,14 +294,6 @@ public class FourInLine {
         State state = node.getState();
         String kill = "XXXX";
         String opponentKill = "OOOO";
-        String substring1 = "";
-        String substring2 = "";
-        String twoInLine1 = "--XX";
-        String twoInLine2= "XX--";
-        String singleXH = "-X---";
-        String singleXL = "---X-";
-        boolean forceBlock3 = false;
-        boolean forceBlockSetup = false;
         int value = 0;
         String row;
         String column;
@@ -330,7 +322,6 @@ public class FourInLine {
                 value += 10000 - node.getDepth();
                 break;
             }
-
         }
         return value;
     }
@@ -391,47 +382,29 @@ public class FourInLine {
             column += "" + state.getValueAt(16 + x) + state.getValueAt(24 + x);
             column += "" + state.getValueAt(32 + x) + state.getValueAt(40 + x);
             column += "" + state.getValueAt(48 + x) + state.getValueAt(56 + x);
-            if (row.contains(opponentKiller0) || column.contains(opponentKiller0))
+
+            //row check
+            if (row.contains(opponentKiller0))
                 return -500;
-            else if (row.contains(killer0) || column.contains(killer0))
+            else if (row.contains(killer0))
                 return 500;
-            else if(row.contains(opponentSetUp2)) {
-                value += -25;
-                opponentSetupCount++;
-                if(opponentSetupCount > 1)
-                    return -500;
-            }
-            else if (row.contains(opponentSetUp0) || row.contains(opponentSetUp1)) {
+            else if (row.contains(opponentSetUp0) || row.contains(opponentSetUp1) || row.contains(opponentSetUp2)) {
                 value += -15;
                 opponentSetupCount++;
-                if(opponentSetupCount > 1)
-                    return -500;
             }
-            else if(row.contains(setUp2)) {
-                value += 20;
-                setupCount++;
-                if(setupCount > 1)
-                    return 500;
-            }
-            else if(row.contains(setUp0) || row.contains(setUp1)) {
+            else if(row.contains(setUp0) || row.contains(setUp1) || row.contains(setUp2)) {
                 value += 10;
                 setupCount++;
-                if(setupCount > 1)
-                    return 500;
             }
             else if (row.contains(opponentInLine6) || row.contains(opponentInLine5)
                     || row.contains(opponentInLine4) || row.contains(opponentInLine3)) {
                 value += -7;
                 opponentThreeInLineCount++;
-                if(opponentThreeInLineCount > 1)
-                    return -500;
             }
             else if (row.contains(inLine6) || row.contains(inLine5)
                     || row.contains(inLine4) || row.contains(inLine3)) {
                 value += 5;
                 threeInLineCount++;
-                if(threeInLineCount > 1)
-                    return 500;
             }
             else if (row.contains(opponentInLine2) || row.contains(opponentInLine1)
                     || row.contains(opponentInLine0) || row.contains(opponentInLine7)
@@ -443,33 +416,28 @@ public class FourInLine {
                     || row.contains(inLine8))
                 value += 2;
 
-            if (column.contains(opponentSetUp0) || column.contains(opponentSetUp1)
-                    || column.contains(opponentSetUp2)) {
+            // column check
+            if(column.contains(opponentKiller0))
+                return -500;
+            else if(column.contains(killer0))
+                return 500;
+            else if (column.contains(opponentSetUp0) || column.contains(opponentSetUp1) || column.contains(opponentSetUp2)) {
                 value += -15;
                 opponentSetupCount++;
-                if(opponentSetupCount > 1)
-                    return -500;
             }
-            else if (column.contains(setUp0) || column.contains(setUp1)
-                    || column.contains(setUp2)){
+            else if(column.contains(setUp0) || column.contains(setUp1) || column.contains(setUp2)) {
                 value += 10;
                 setupCount++;
-                if(setupCount > 1)
-                    return 500;
             }
             else if (column.contains(opponentInLine6) || column.contains(opponentInLine5)
                     || column.contains(opponentInLine4) || column.contains(opponentInLine3)){
                 value += -7;
                 opponentThreeInLineCount++;
-                if(opponentThreeInLineCount > 1)
-                    return -500;
             }
             else if (column.contains(inLine6) || column.contains(inLine5)
                     || column.contains(inLine4) || column.contains(inLine3)) {
                 value += 5;
                 threeInLineCount++;
-                if(threeInLineCount > 1)
-                    return 500;
             }
             else if (column.contains(opponentInLine2) || column.contains(opponentInLine1)
                     ||  column.contains(opponentInLine0) || column.contains(opponentInLine7)
@@ -483,7 +451,15 @@ public class FourInLine {
 
         if(opponentSetupCount > 0 && opponentThreeInLineCount > 0)
             return  -500;
+        if(opponentThreeInLineCount > 1)
+            return -500;
+        if(opponentSetupCount > 1)
+            return -500;
         if(setupCount > 0 && threeInLineCount > 0)
+            return 500;
+        if(setupCount > 1)
+            return 500;
+        if(threeInLineCount > 1)
             return 500;
         return value;
     }
